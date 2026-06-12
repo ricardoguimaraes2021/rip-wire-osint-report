@@ -18,32 +18,36 @@ const groupLabels: Record<string, string> = {
   business: "Business",
 }
 
-function nodePosition(i: number, n: number, center: number, radius: number) {
+function nodePosition(i: number, n: number, cx: number, cy: number, radius: number) {
   const angle = (i / n) * Math.PI * 2 - Math.PI / 2
   return {
     angle,
-    x: center + radius * Math.cos(angle),
-    y: center + radius * Math.sin(angle),
+    x: cx + radius * Math.cos(angle),
+    y: cy + radius * Math.sin(angle),
   }
 }
 
 function labelPlacement(angle: number, x: number, y: number) {
   const cos = Math.cos(angle)
   const sin = Math.sin(angle)
-  const outward = 16
+  const outward = 18
   const labelX = x + cos * outward
-  const labelY = y + sin * outward + (sin > 0.35 ? 5 : sin < -0.35 ? -2 : 4)
+  const labelY = y + sin * outward + (sin > 0.35 ? 6 : sin < -0.35 ? -3 : 4)
   const anchor: "start" | "middle" | "end" =
-    cos < -0.2 ? "end" : cos > 0.2 ? "start" : "middle"
+    cos < -0.15 ? "end" : cos > 0.15 ? "start" : "middle"
   return { labelX, labelY, anchor }
 }
 
 export function NetworkSection() {
   const [hovered, setHovered] = useState<string | null>(null)
-  const padding = 110
+  // Generous horizontal padding so long left/right labels never clip
+  const padH = 210
+  const padV = 150
   const graphSize = 520
-  const size = graphSize + padding * 2
-  const center = padding + graphSize / 2
+  const svgW = graphSize + padH * 2
+  const svgH = graphSize + padV * 2
+  const cx = padH + graphSize / 2
+  const cy = padV + graphSize / 2
   const radius = 175
   const n = networkNodes.length
 
@@ -63,21 +67,21 @@ export function NetworkSection() {
       <div className="grid gap-6 lg:grid-cols-[1fr_220px]">
         <div className="overflow-visible rounded-lg border border-border bg-card p-4 sm:p-6">
           <svg
-            viewBox={`0 0 ${size} ${size}`}
-            className="mx-auto h-auto w-full max-w-2xl"
+            viewBox={`0 0 ${svgW} ${svgH}`}
+            className="mx-auto h-auto w-full"
             preserveAspectRatio="xMidYMid meet"
             role="img"
             aria-label="Network graph of the target's correlated public connections"
           >
             {/* edges */}
             {networkNodes.map((node, i) => {
-              const { x, y } = nodePosition(i, n, center, radius)
+              const { x, y } = nodePosition(i, n, cx, cy, radius)
               const isActive = hovered === node.id
               return (
                 <line
                   key={`edge-${node.id}`}
-                  x1={center}
-                  y1={center}
+                  x1={cx}
+                  y1={cy}
                   x2={x}
                   y2={y}
                   stroke={isActive ? groupColors[node.group] : "var(--border)"}
@@ -89,7 +93,7 @@ export function NetworkSection() {
 
             {/* outer nodes */}
             {networkNodes.map((node, i) => {
-              const { angle, x, y } = nodePosition(i, n, center, radius)
+              const { angle, x, y } = nodePosition(i, n, cx, cy, radius)
               const isActive = hovered === node.id
               const { labelX, labelY, anchor } = labelPlacement(angle, x, y)
               return (
@@ -122,11 +126,11 @@ export function NetworkSection() {
             })}
 
             {/* center node */}
-            <circle cx={center} cy={center} r={34} fill="var(--primary)" opacity={0.12} />
-            <circle cx={center} cy={center} r={22} fill="var(--primary)" />
+            <circle cx={cx} cy={cy} r={34} fill="var(--primary)" opacity={0.12} />
+            <circle cx={cx} cy={cy} r={22} fill="var(--primary)" />
             <text
-              x={center}
-              y={center - 1}
+              x={cx}
+              y={cy - 1}
               textAnchor="middle"
               className="font-semibold"
               fontSize="11"
@@ -135,8 +139,8 @@ export function NetworkSection() {
               Ismo
             </text>
             <text
-              x={center}
-              y={center + 11}
+              x={cx}
+              y={cy + 11}
               textAnchor="middle"
               className="font-semibold"
               fontSize="11"
