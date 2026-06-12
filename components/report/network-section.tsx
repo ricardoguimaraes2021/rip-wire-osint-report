@@ -18,11 +18,33 @@ const groupLabels: Record<string, string> = {
   business: "Business",
 }
 
+function nodePosition(i: number, n: number, center: number, radius: number) {
+  const angle = (i / n) * Math.PI * 2 - Math.PI / 2
+  return {
+    angle,
+    x: center + radius * Math.cos(angle),
+    y: center + radius * Math.sin(angle),
+  }
+}
+
+function labelPlacement(angle: number, x: number, y: number) {
+  const cos = Math.cos(angle)
+  const sin = Math.sin(angle)
+  const outward = 16
+  const labelX = x + cos * outward
+  const labelY = y + sin * outward + (sin > 0.35 ? 5 : sin < -0.35 ? -2 : 4)
+  const anchor: "start" | "middle" | "end" =
+    cos < -0.2 ? "end" : cos > 0.2 ? "start" : "middle"
+  return { labelX, labelY, anchor }
+}
+
 export function NetworkSection() {
   const [hovered, setHovered] = useState<string | null>(null)
-  const size = 560
-  const center = size / 2
-  const radius = 210
+  const padding = 110
+  const graphSize = 520
+  const size = graphSize + padding * 2
+  const center = padding + graphSize / 2
+  const radius = 175
   const n = networkNodes.length
 
   return (
@@ -39,18 +61,17 @@ export function NetworkSection() {
       </p>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_220px]">
-        <div className="overflow-hidden rounded-lg border border-border bg-card p-2">
+        <div className="overflow-visible rounded-lg border border-border bg-card p-4 sm:p-6">
           <svg
             viewBox={`0 0 ${size} ${size}`}
-            className="mx-auto h-auto w-full max-w-xl"
+            className="mx-auto h-auto w-full max-w-2xl"
+            preserveAspectRatio="xMidYMid meet"
             role="img"
             aria-label="Network graph of the target's correlated public connections"
           >
             {/* edges */}
             {networkNodes.map((node, i) => {
-              const angle = (i / n) * Math.PI * 2 - Math.PI / 2
-              const x = center + radius * Math.cos(angle)
-              const y = center + radius * Math.sin(angle)
+              const { x, y } = nodePosition(i, n, center, radius)
               const isActive = hovered === node.id
               return (
                 <line
@@ -68,12 +89,9 @@ export function NetworkSection() {
 
             {/* outer nodes */}
             {networkNodes.map((node, i) => {
-              const angle = (i / n) * Math.PI * 2 - Math.PI / 2
-              const x = center + radius * Math.cos(angle)
-              const y = center + radius * Math.sin(angle)
+              const { angle, x, y } = nodePosition(i, n, center, radius)
               const isActive = hovered === node.id
-              const anchor = x < center - 20 ? "end" : x > center + 20 ? "start" : "middle"
-              const labelX = x + (anchor === "end" ? -10 : anchor === "start" ? 10 : 0)
+              const { labelX, labelY, anchor } = labelPlacement(angle, x, y)
               return (
                 <g
                   key={node.id}
@@ -90,10 +108,10 @@ export function NetworkSection() {
                   />
                   <text
                     x={labelX}
-                    y={y + 3}
+                    y={labelY}
                     textAnchor={anchor}
                     className="font-mono"
-                    fontSize="10"
+                    fontSize="9.5"
                     fill={isActive ? "var(--foreground)" : "var(--muted-foreground)"}
                     opacity={hovered && !isActive ? 0.4 : 1}
                   >
